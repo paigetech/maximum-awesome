@@ -1,20 +1,51 @@
-set nocursorline " don't highlight current line
+nnoremap E $
+nnoremap B 0
+vnoremap E $
+vnoremap B 0
+noremap <C-*> i*<Esc>
+
+" Use CTRL-S for saving, also in Insert mode
+nmap <c-s> :w<CR>
+imap <c-s> <Esc>:w<CR>a
+imap <c-s> <Esc><c-s>
+
+set hlsearch
+" clear the search string
+:command C let @/=""
+" trying to have a find key
+nnoremap <Leader>u /\(this\s\)\@<!\<chapter\>\\|sect\\|transmittal\\|exhibit\\|amendment\\|\<cr\>\\|\<refer\>\\|\<see\>\\|\<aca\>\\|\<fr\>\\|\([>]\)\@<!\<\( 4[25] \\| 21 \)\( days\)\@!/<cr>
+"prep hisotry
+nnoremap <Leader>h :%s/<font.\{-}>\\|<\/font>\\|<i>\\|<\/i>//g<cr>
+"cleanup carriage returns
+nnoremap <Leader>w :%s/\([0-9A-Za-z_,.)]\)\n\([0-9A-Za-z_,.(]\)/\1 \2/g<cr>
+nnoremap <Leader>b :%s/<p>\(<a name=.\{-}\/a>\d\+\..\{-}-.\{-}\)<\/p>/<p><b>\1<\/b><\/p>/g<cr>
+
+" open a pdf from the _download folder
+:command Pdf :Rpdf /Users/paigehubbell/Dropbox/Mediregs/mre/collections/_downloads
+
+" open in firefox
+:command FF :!open -a /opt/homebrew-cask/Caskroom/firefox/latest/Firefox.app %
+
+" use tslime to send rsepc to tmux pane
+" let g:rspec_command = 'call Send_to_Tmux("rspec {spec}\n")'
+
+" complete links
+nnoremap <S-a> a</a><esc>
+
+" use pdftotext
+:command! -complete=file -nargs=1 Rpdf :r !pdftotext -nopgbrk <q-args> - |fmt -csw78
+
+" show hidden files with nerdtree
+let NERDTreeShowHidden=1
 
 " keyboard shortcuts
 inoremap jj <ESC>
 
-" highlight search
-"set hlsearch
-"nmap <leader>hl :let @/ = ""<CR>
-
 " gui settings
-if (&t_Co == 256 || has('gui_running'))
-  if ($TERM_PROGRAM == 'iTerm.app')
     colorscheme solarized
-  else
-    colorscheme desert
-  endif
-endif
+    set background=dark
+
+let g:solarized_termcolors= 256
 
 " Disambiguate ,a & ,t from the Align plugin, making them fast again.
 "
@@ -31,3 +62,113 @@ function! s:RemoveConflictingAlignMaps()
 endfunction
 command! -nargs=0 RemoveConflictingAlignMaps call s:RemoveConflictingAlignMaps()
 silent! autocmd VimEnter * RemoveConflictingAlignMaps
+
+"thoughtbot rspec runner
+" RSpec.vim mappings
+ map <Leader>c :call RunCurrentSpecFile()<CR>
+ map <Leader>s :call RunNearestSpec()<CR>
+ map <Leader>l :call RunLastSpec()<CR>
+ map <Leader>r :call RunAllSpecs()<CR>
+
+"save
+map <C-s> <esc>:w<CR>
+imap <C-s> <esc>:w<CR>
+
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+"get rid of non-active buffers to help with tmux/vim lag
+function! Wipeout()
+  " list of *all* buffer numbers
+  let l:buffers = range(1, bufnr('$'))
+
+  " what tab page are we in?
+  let l:currentTab = tabpagenr()
+  try
+    " go through all tab pages
+    let l:tab = 0
+    while l:tab < tabpagenr('$')
+      let l:tab += 1
+
+      " go through all windows
+      let l:win = 0
+      while l:win < winnr('$')
+        let l:win += 1
+        " whatever buffer is in this window in this tab, remove it from
+        " l:buffers list
+        let l:thisbuf = winbufnr(l:win)
+        call remove(l:buffers, index(l:buffers, l:thisbuf))
+      endwhile
+    endwhile
+
+    " if there are any buffers left, delete them
+    if len(l:buffers)
+      execute 'bwipeout' join(l:buffers)
+    endif
+  finally
+    " go back to our original tab page
+    execute 'tabnext' l:currentTab
+  endtry
+endfunction
+
+" setting up the found X for searching
+let s:prevcountcache=[[], 0]
+  function! ShowCount()
+  let key=[@/, b:changedtick]
+  if s:prevcountcache[0]==#key
+    return s:prevcountcache[1]
+  endif
+  let s:prevcountcache[0]=key
+  let s:prevcountcache[1]=0
+  let pos=getpos('.')
+  try
+    redir => subscount
+    silent %s///gne
+    redir END
+    let result=matchstr(subscount, '\d\+')
+    let s:prevcountcache[1]=result
+    return result
+  finally
+    call setpos('.', pos)
+  endtry
+endfunction
+
+" more of found X for searching
+func! CountResult()
+  let found_count = ShowCount()
+  let result = ""
+  if found_count > 0
+    let result = "Found:" . found_count
+  endif
+  return result
+endfunc
+
+set ruler
+let &statusline='%{CountResult()}  %<%f %h%m%r%=%-14.(%l,%c%V%) %P'
+
+" associate filetypes with syntax highlight types (:setf)
+au BufRead,BufNewFile *.wrap setfiletype html
+
+"prevent syntax highlighting with large files
+autocmd BufWinEnter * if line2byte(line("$") + 1) > 1000000 | syntax clear | endif
+
+"set both relative number and number for hybrid numbers
+set relativenumber
+set number
+
+"word processor
+func! WordProcessorMode() 
+  setlocal formatoptions=1 
+  setlocal noexpandtab 
+  map j gj 
+  map k gk
+  setlocal spell spelllang=en_us 
+  set thesaurus+=/Users/sbrown/.vim/thesaurus/mthesaur.txt
+  set complete+=s
+  set formatprg=par
+  setlocal wrap 
+  setlocal linebreak 
+endfunc 
+com! WP call WordProcessorMode()
