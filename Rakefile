@@ -212,6 +212,7 @@ def filemap(map)
 end
 
 COPIED_FILES = filemap(
+  'zshrc'         => '~/.zshrc',
   'vimrc.local'         => '~/.vimrc.local',
   'vimrc.bundles.local' => '~/.vimrc.bundles.local',
   'tmux.conf.local'     => '~/.tmux.conf.local'
