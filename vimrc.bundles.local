@@ -1,0 +1,3 @@
+Bundle 'thoughtbot/vim-rspec'
+Bundle 'jgdavey/tslime.vim'
+Bundle 'jeffkreeftmeijer/vim-numbertoggle'
